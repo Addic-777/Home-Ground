@@ -5,10 +5,20 @@ The Smart QR Attendance system allows teachers to generate unique QR codes for e
 
 ## ✅ System Status
 - **QR Generation**: ✅ Working (Fixed token generation issue)
-- **QR Scanning**: ✅ Working
-- **Camera Integration**: ✅ Working
+- **QR Scanning**: ✅ Working (Fixed camera initialization)
+- **Camera Integration**: ✅ Working (Enhanced error handling and DOM readiness)
 - **Attendance Marking**: ✅ Working
 - **Database Functions**: ✅ All operational
+
+## Recent Fixes
+1. **Token Generation**: Fixed `gen_random_bytes()` function by enabling pgcrypto extension
+2. **Camera Window**: Fixed camera not opening by:
+   - Adding proper DOM element readiness checks
+   - Implementing initialization state with loading indicator
+   - Adding comprehensive error logging
+   - Ensuring scanner cleanup between sessions
+   - Adding 100ms delay for DOM stability
+   - Setting minimum height for camera container
 
 ## For Teachers
 

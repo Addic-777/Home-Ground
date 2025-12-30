@@ -15,20 +15,27 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
   const [error, setError] = useState<string>('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     return () => {
-      stopScanning();
+      // Cleanup on unmount
+      if (scannerRef.current) {
+        stopScanning();
+      }
     };
   }, []);
 
   const requestCameraPermission = async () => {
     try {
+      console.log('Requesting camera permission...');
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      console.log('Camera permission granted');
       stream.getTracks().forEach(track => track.stop());
       setCameraPermission('granted');
       return true;
     } catch (err) {
+      console.error('Camera permission denied:', err);
       setCameraPermission('denied');
       setError('Camera permission denied. Please enable camera access in your browser settings.');
       return false;
@@ -36,48 +43,103 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
   };
 
   const startScanning = async () => {
+    console.log('Starting QR scanner...');
     setError('');
+    setIsInitializing(true);
     
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) return;
-
     try {
+      // Request camera permission first
+      const hasPermission = await requestCameraPermission();
+      if (!hasPermission) {
+        setIsInitializing(false);
+        return;
+      }
+
+      // Wait a bit for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check if element exists
+      const element = document.getElementById('qr-reader');
+      if (!element) {
+        throw new Error('QR reader element not found');
+      }
+
+      console.log('Initializing Html5Qrcode...');
+      
+      // Clear any existing scanner
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.stop();
+          await scannerRef.current.clear();
+        } catch (e) {
+          console.log('Cleared previous scanner');
+        }
+      }
+
+      // Create new scanner instance
       const scanner = new Html5Qrcode('qr-reader');
       scannerRef.current = scanner;
 
+      console.log('Starting camera...');
+      
+      // Start scanning with camera
       await scanner.start(
-        { facingMode: 'environment' },
+        { facingMode: 'environment' }, // Use back camera on mobile
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
+          fps: 10, // Frames per second
+          qrbox: { width: 250, height: 250 }, // QR box size
+          aspectRatio: 1.0,
         },
         (decodedText) => {
+          console.log('QR Code detected:', decodedText);
           onScanSuccess(decodedText);
           stopScanning();
         },
         (errorMessage) => {
           // Ignore scanning errors (they happen continuously while scanning)
-          console.debug('QR scan error:', errorMessage);
+          // Only log occasionally to avoid console spam
+          if (Math.random() < 0.01) {
+            console.debug('Scanning...', errorMessage);
+          }
         }
       );
 
+      console.log('Camera started successfully');
       setIsScanning(true);
+      setIsInitializing(false);
     } catch (err) {
+      console.error('Failed to start scanner:', err);
       const errorMsg = err instanceof Error ? err.message : 'Failed to start camera';
       setError(errorMsg);
+      setIsInitializing(false);
       if (onScanError) onScanError(errorMsg);
+      
+      // Clean up on error
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.clear();
+        } catch (e) {
+          console.error('Error clearing scanner:', e);
+        }
+        scannerRef.current = null;
+      }
     }
   };
 
   const stopScanning = async () => {
-    if (scannerRef.current && isScanning) {
+    console.log('Stopping scanner...');
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-        scannerRef.current = null;
+        if (isScanning) {
+          await scannerRef.current.stop();
+          console.log('Scanner stopped');
+        }
+        await scannerRef.current.clear();
+        console.log('Scanner cleared');
       } catch (err) {
         console.error('Error stopping scanner:', err);
       }
+      scannerRef.current = null;
     }
     setIsScanning(false);
   };
@@ -108,7 +170,7 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
         )}
 
         <div className="space-y-4">
-          {!isScanning ? (
+          {!isScanning && !isInitializing ? (
             <Button
               onClick={startScanning}
               className="w-full"
@@ -117,6 +179,15 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
             >
               <Camera className="h-5 w-5 mr-2" />
               Start Camera
+            </Button>
+          ) : isInitializing ? (
+            <Button
+              disabled
+              className="w-full"
+              size="lg"
+            >
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Initializing Camera...
             </Button>
           ) : (
             <Button
@@ -130,12 +201,14 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
             </Button>
           )}
 
+          {/* QR Reader Container - Always rendered but hidden when not scanning */}
           <div
             id="qr-reader"
             className={`w-full ${isScanning ? 'block' : 'hidden'} rounded-lg overflow-hidden border-2 border-border`}
+            style={{ minHeight: isScanning ? '300px' : '0' }}
           />
 
-          {!isScanning && (
+          {!isScanning && !isInitializing && (
             <div className="text-center p-8 border-2 border-dashed border-border rounded-lg bg-muted/30">
               <Camera className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
@@ -160,6 +233,17 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
             <li>Wait for automatic detection</li>
             <li>Your attendance will be marked instantly</li>
           </ol>
+        </div>
+
+        {/* Troubleshooting Tips */}
+        <div className="bg-card p-3 rounded-lg border text-xs">
+          <p className="font-semibold mb-1">Camera not working?</p>
+          <ul className="text-muted-foreground space-y-1 list-disc list-inside">
+            <li>Make sure you're using HTTPS (required for camera)</li>
+            <li>Check browser permissions for camera access</li>
+            <li>Try refreshing the page</li>
+            <li>Use a different browser if issues persist</li>
+          </ul>
         </div>
       </CardContent>
     </Card>

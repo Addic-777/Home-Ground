@@ -119,65 +119,65 @@ export default function TeacherDashboardNew() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Welcome back, {user?.user_metadata?.full_name || 'Teacher'}
         </p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
               Total Students
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{students.length}</div>
+            <div className="text-2xl font-bold tracking-tight text-foreground">{students.length}</div>
             <p className="text-xs text-muted-foreground mt-1">In your department</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-chart-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <Card className="border-l-4 border-l-chart-1 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               Assigned Subjects
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{teacher?.assigned_subjects.length || 0}</div>
+            <div className="text-2xl font-bold tracking-tight text-foreground">{teacher?.assigned_subjects.length || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">Active subjects</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-chart-5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <Card className="border-l-4 border-l-chart-5 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Overall Attendance
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{overallAttendance.toFixed(1)}%</div>
+            <div className="text-2xl font-bold tracking-tight text-foreground">{overallAttendance.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               {totalPresent} of {totalClasses} records
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-chart-3">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <Card className="border-l-4 border-l-chart-3 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Classes Conducted
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{totalClasses}</div>
+            <div className="text-2xl font-bold tracking-tight text-foreground">{totalClasses}</div>
             <p className="text-xs text-muted-foreground mt-1">Total attendance records</p>
           </CardContent>
         </Card>

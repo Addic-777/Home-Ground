@@ -55,32 +55,18 @@ export default function StudentRegistrationPage() {
     setLoading(true);
 
     try {
-      // Find or create department
+      // Find or create department using RPC
       const departmentName = formData.department_name.trim();
-      const departments = await getDepartments();
-      let department = departments.find(
-        (d) => d.name.toLowerCase() === departmentName.toLowerCase()
+      const { data: departmentId, error: deptError } = await supabase.rpc(
+        'find_or_create_department',
+        {
+          p_department_name: departmentName,
+          p_subjects: ['Subject 1', 'Subject 2', 'Subject 3', 'Subject 4', 'Subject 5'],
+        }
       );
 
-      let departmentId: string;
-
-      if (department) {
-        departmentId = department.id;
-      } else {
-        // Create new department with default subjects
-        const { data: newDept, error: deptError } = await supabase
-          .from('departments')
-          .insert({
-            name: departmentName,
-            subjects: ['Subject 1', 'Subject 2', 'Subject 3', 'Subject 4', 'Subject 5'],
-          })
-          .select()
-          .single();
-
-        if (deptError) throw deptError;
-        departmentId = newDept.id;
-        department = newDept;
-      }
+      if (deptError) throw deptError;
+      if (!departmentId) throw new Error('Failed to create or find department');
 
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -91,39 +77,33 @@ export default function StudentRegistrationPage() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user');
 
-      // Wait a moment for the session to be established
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Get department subjects
+      const { data: dept } = await supabase
+        .from('departments')
+        .select('subjects')
+        .eq('id', departmentId)
+        .single();
 
-      // Get the session to ensure we're authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Session not established. Please try logging in.');
+      const subjects = dept?.subjects || ['Subject 1', 'Subject 2', 'Subject 3', 'Subject 4', 'Subject 5'];
+
+      // Register student using RPC function
+      const { data: result, error: registerError } = await supabase.rpc(
+        'register_student',
+        {
+          p_user_id: authData.user.id,
+          p_email: formData.email,
+          p_full_name: formData.full_name,
+          p_department_id: departmentId,
+          p_section: formData.section || null,
+          p_roll_number: formData.roll_number,
+          p_subjects: subjects,
+        }
+      );
+
+      if (registerError) throw registerError;
+      if (result && !result.success) {
+        throw new Error(result.error || 'Registration failed');
       }
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: formData.email,
-          full_name: formData.full_name,
-          role: 'student',
-        });
-
-      if (profileError) throw profileError;
-
-      // Create student record
-      const { error: studentError } = await supabase
-        .from('students')
-        .insert({
-          id: authData.user.id,
-          department_id: departmentId,
-          section: formData.section || null,
-          roll_number: formData.roll_number,
-          subjects: department.subjects,
-        });
-
-      if (studentError) throw studentError;
 
       setSuccess(true);
       setTimeout(() => {

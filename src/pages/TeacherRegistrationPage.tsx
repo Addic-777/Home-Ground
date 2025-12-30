@@ -79,39 +79,18 @@ export default function TeacherRegistrationPage() {
     setLoading(true);
 
     try {
-      // Find or create department
+      // Find or create department using RPC
       const departmentName = formData.department_name.trim();
-      const departments = await getDepartments();
-      let department = departments.find(
-        (d) => d.name.toLowerCase() === departmentName.toLowerCase()
+      const { data: departmentId, error: deptError } = await supabase.rpc(
+        'find_or_create_department',
+        {
+          p_department_name: departmentName,
+          p_subjects: formData.assigned_subjects,
+        }
       );
 
-      let departmentId: string;
-
-      if (department) {
-        departmentId = department.id;
-        // Update department subjects if teacher adds new ones
-        const allSubjects = Array.from(
-          new Set([...department.subjects, ...formData.assigned_subjects])
-        );
-        await supabase
-          .from('departments')
-          .update({ subjects: allSubjects })
-          .eq('id', departmentId);
-      } else {
-        // Create new department with teacher's subjects
-        const { data: newDept, error: deptError } = await supabase
-          .from('departments')
-          .insert({
-            name: departmentName,
-            subjects: formData.assigned_subjects,
-          })
-          .select()
-          .single();
-
-        if (deptError) throw deptError;
-        departmentId = newDept.id;
-      }
+      if (deptError) throw deptError;
+      if (!departmentId) throw new Error('Failed to create or find department');
 
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -122,37 +101,22 @@ export default function TeacherRegistrationPage() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user');
 
-      // Wait a moment for the session to be established
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Register teacher using RPC function
+      const { data: result, error: registerError } = await supabase.rpc(
+        'register_teacher',
+        {
+          p_user_id: authData.user.id,
+          p_email: formData.email,
+          p_full_name: formData.full_name,
+          p_department_id: departmentId,
+          p_assigned_subjects: formData.assigned_subjects,
+        }
+      );
 
-      // Get the session to ensure we're authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Session not established. Please try logging in.');
+      if (registerError) throw registerError;
+      if (result && !result.success) {
+        throw new Error(result.error || 'Registration failed');
       }
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: formData.email,
-          full_name: formData.full_name,
-          role: 'teacher',
-        });
-
-      if (profileError) throw profileError;
-
-      // Create teacher record
-      const { error: teacherError } = await supabase
-        .from('teachers')
-        .insert({
-          id: authData.user.id,
-          department_id: departmentId,
-          assigned_subjects: formData.assigned_subjects,
-        });
-
-      if (teacherError) throw teacherError;
 
       setSuccess(true);
       setTimeout(() => {

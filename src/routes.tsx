@@ -4,11 +4,11 @@ import StudentRegistrationPage from './pages/StudentRegistrationPage';
 import TeacherRegistrationPage from './pages/TeacherRegistrationPage';
 import TeacherLayout from './components/layouts/TeacherLayout';
 import StudentLayout from './components/layouts/StudentLayout';
-import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage';
+import TeacherDashboardNew from './pages/teacher/TeacherDashboardNew';
 import TeacherStudentsPage from './pages/teacher/TeacherStudentsPage';
 import TeacherAttendancePage from './pages/teacher/TeacherAttendancePage';
 import TeacherAnalyticsPage from './pages/teacher/TeacherAnalyticsPage';
-import StudentDashboardPage from './pages/student/StudentDashboardPage';
+import StudentDashboardNew from './pages/student/StudentDashboardNew';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
 import type { ReactNode } from 'react';
@@ -50,7 +50,7 @@ const routes: RouteConfig[] = [
       {
         name: 'Teacher Dashboard',
         path: '/teacher/dashboard',
-        element: <TeacherDashboardPage />,
+        element: <TeacherDashboardNew />,
       },
       {
         name: 'Students',
@@ -77,7 +77,7 @@ const routes: RouteConfig[] = [
       {
         name: 'Student Dashboard',
         path: '/student/dashboard',
-        element: <StudentDashboardPage />,
+        element: <StudentDashboardNew />,
       },
       {
         name: 'My Attendance',

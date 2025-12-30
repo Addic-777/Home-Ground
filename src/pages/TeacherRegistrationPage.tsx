@@ -12,17 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GraduationCap, AlertCircle, CheckCircle } from 'lucide-react';
-import { getDepartments, registerTeacher } from '@/db/api';
-import type { Department } from '@/types/types';
+import { getDepartments } from '@/db/api';
+import { supabase } from '@/db/supabase';
 
 export default function TeacherRegistrationPage() {
   const [formData, setFormData] = useState({
@@ -30,50 +23,32 @@ export default function TeacherRegistrationPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    department_id: '',
+    department_name: '',
     assigned_subjects: [] as string[],
   });
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
+  const [subjectInput, setSubjectInput] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadDepartments();
-  }, []);
-
-  useEffect(() => {
-    if (formData.department_id) {
-      const dept = departments.find((d) => d.id === formData.department_id);
-      setAvailableSubjects(dept?.subjects || []);
-      setFormData((prev) => ({ ...prev, assigned_subjects: [] }));
-    } else {
-      setAvailableSubjects([]);
-    }
-  }, [formData.department_id, departments]);
-
-  const loadDepartments = async () => {
-    try {
-      const data = await getDepartments();
-      setDepartments(data);
-    } catch (err) {
-      console.error('Failed to load departments:', err);
+  const handleAddSubject = () => {
+    const subject = subjectInput.trim();
+    if (subject && !formData.assigned_subjects.includes(subject)) {
+      setFormData((prev) => ({
+        ...prev,
+        assigned_subjects: [...prev.assigned_subjects, subject],
+      }));
+      setSubjectInput('');
     }
   };
 
-  const handleSubjectToggle = (subject: string) => {
-    setFormData((prev) => {
-      const isSelected = prev.assigned_subjects.includes(subject);
-      return {
-        ...prev,
-        assigned_subjects: isSelected
-          ? prev.assigned_subjects.filter((s) => s !== subject)
-          : [...prev.assigned_subjects, subject],
-      };
-    });
+  const handleRemoveSubject = (subject: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      assigned_subjects: prev.assigned_subjects.filter((s) => s !== subject),
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,26 +66,84 @@ export default function TeacherRegistrationPage() {
       return;
     }
 
-    if (!formData.department_id) {
-      setError('Please select a department');
+    if (!formData.department_name.trim()) {
+      setError('Please enter a department name');
       return;
     }
 
     if (formData.assigned_subjects.length === 0) {
-      setError('Please select at least one subject');
+      setError('Please add at least one subject');
       return;
     }
 
     setLoading(true);
 
     try {
-      await registerTeacher({
-        full_name: formData.full_name,
+      // Find or create department
+      const departmentName = formData.department_name.trim();
+      const departments = await getDepartments();
+      let department = departments.find(
+        (d) => d.name.toLowerCase() === departmentName.toLowerCase()
+      );
+
+      let departmentId: string;
+
+      if (department) {
+        departmentId = department.id;
+        // Update department subjects if teacher adds new ones
+        const allSubjects = Array.from(
+          new Set([...department.subjects, ...formData.assigned_subjects])
+        );
+        await supabase
+          .from('departments')
+          .update({ subjects: allSubjects })
+          .eq('id', departmentId);
+      } else {
+        // Create new department with teacher's subjects
+        const { data: newDept, error: deptError } = await supabase
+          .from('departments')
+          .insert({
+            name: departmentName,
+            subjects: formData.assigned_subjects,
+          })
+          .select()
+          .single();
+
+        if (deptError) throw deptError;
+        departmentId = newDept.id;
+      }
+
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        department_id: formData.department_id,
-        assigned_subjects: formData.assigned_subjects,
       });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user');
+
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: formData.email,
+          full_name: formData.full_name,
+          role: 'teacher',
+        });
+
+      if (profileError) throw profileError;
+
+      // Create teacher record
+      const { error: teacherError } = await supabase
+        .from('teachers')
+        .insert({
+          id: authData.user.id,
+          department_id: departmentId,
+          assigned_subjects: formData.assigned_subjects,
+        });
+
+      if (teacherError) throw teacherError;
 
       setSuccess(true);
       setTimeout(() => {
@@ -227,48 +260,66 @@ export default function TeacherRegistrationPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="department">Assigned Department *</Label>
-              <Select
-                value={formData.department_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, department_id: value })
+              <Input
+                id="department"
+                type="text"
+                placeholder="e.g., AIML, CSE, ECE"
+                value={formData.department_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, department_name: e.target.value })
                 }
+                required
                 disabled={loading}
-              >
-                <SelectTrigger id="department">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
-            {availableSubjects.length > 0 && (
-              <div className="space-y-2">
-                <Label>Assigned Subjects * (Select at least one)</Label>
-                <div className="border rounded-md p-4 space-y-3 max-h-48 overflow-y-auto">
-                  {availableSubjects.map((subject) => (
-                    <div key={subject} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={subject}
-                        checked={formData.assigned_subjects.includes(subject)}
-                        onCheckedChange={() => handleSubjectToggle(subject)}
+            <div className="space-y-2">
+              <Label>Assigned Subjects * (Add at least one)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Enter subject name"
+                  value={subjectInput}
+                  onChange={(e) => setSubjectInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSubject();
+                    }
+                  }}
+                  disabled={loading}
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddSubject}
+                  disabled={loading || !subjectInput.trim()}
+                  variant="secondary"
+                >
+                  Add
+                </Button>
+              </div>
+              {formData.assigned_subjects.length > 0 && (
+                <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
+                  {formData.assigned_subjects.map((subject) => (
+                    <div
+                      key={subject}
+                      className="flex items-center justify-between p-2 bg-muted rounded"
+                    >
+                      <span className="text-sm font-medium">{subject}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveSubject(subject)}
                         disabled={loading}
-                      />
-                      <Label
-                        htmlFor={subject}
-                        className="text-sm font-normal cursor-pointer"
+                        className="h-6 px-2"
                       >
-                        {subject}
-                      </Label>
+                        Remove
+                      </Button>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GraduationCap, AlertCircle, CheckCircle } from 'lucide-react';
-import { getDepartments, registerStudent } from '@/db/api';
-import type { Department } from '@/types/types';
+import { getDepartments } from '@/db/api';
+import { supabase } from '@/db/supabase';
 
 export default function StudentRegistrationPage() {
   const [formData, setFormData] = useState({
@@ -29,29 +22,15 @@ export default function StudentRegistrationPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    department_id: '',
+    department_name: '',
     section: '',
     roll_number: '',
   });
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    loadDepartments();
-  }, []);
-
-  const loadDepartments = async () => {
-    try {
-      const data = await getDepartments();
-      setDepartments(data);
-    } catch (err) {
-      console.error('Failed to load departments:', err);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,22 +47,74 @@ export default function StudentRegistrationPage() {
       return;
     }
 
-    if (!formData.department_id) {
-      setError('Please select a department');
+    if (!formData.department_name.trim()) {
+      setError('Please enter a department name');
       return;
     }
 
     setLoading(true);
 
     try {
-      await registerStudent({
-        full_name: formData.full_name,
+      // Find or create department
+      const departmentName = formData.department_name.trim();
+      const departments = await getDepartments();
+      let department = departments.find(
+        (d) => d.name.toLowerCase() === departmentName.toLowerCase()
+      );
+
+      let departmentId: string;
+
+      if (department) {
+        departmentId = department.id;
+      } else {
+        // Create new department with default subjects
+        const { data: newDept, error: deptError } = await supabase
+          .from('departments')
+          .insert({
+            name: departmentName,
+            subjects: ['Subject 1', 'Subject 2', 'Subject 3', 'Subject 4', 'Subject 5'],
+          })
+          .select()
+          .single();
+
+        if (deptError) throw deptError;
+        departmentId = newDept.id;
+        department = newDept;
+      }
+
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        department_id: formData.department_id,
-        section: formData.section || undefined,
-        roll_number: formData.roll_number,
       });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user');
+
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: formData.email,
+          full_name: formData.full_name,
+          role: 'student',
+        });
+
+      if (profileError) throw profileError;
+
+      // Create student record
+      const { error: studentError } = await supabase
+        .from('students')
+        .insert({
+          id: authData.user.id,
+          department_id: departmentId,
+          section: formData.section || null,
+          roll_number: formData.roll_number,
+          subjects: department.subjects,
+        });
+
+      if (studentError) throw studentError;
 
       setSuccess(true);
       setTimeout(() => {
@@ -201,24 +232,17 @@ export default function StudentRegistrationPage() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="department">Department *</Label>
-                <Select
-                  value={formData.department_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, department_id: value })
+                <Input
+                  id="department"
+                  type="text"
+                  placeholder="e.g., AIML, CSE, ECE"
+                  value={formData.department_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, department_name: e.target.value })
                   }
+                  required
                   disabled={loading}
-                >
-                  <SelectTrigger id="department">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="roll_number">Class Roll Number *</Label>

@@ -154,7 +154,7 @@ export default function TeacherAttendancePage() {
                 <SelectTrigger id="subject">
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4}>
                   {assignedSubjects.map((subject) => (
                     <SelectItem key={subject} value={subject}>
                       {subject}

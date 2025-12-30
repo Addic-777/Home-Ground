@@ -68,26 +68,38 @@ export default function StudentQRScanPage() {
         token = url.searchParams.get('token') || scannedData;
       }
 
+      console.log('Scanning QR with token:', token);
+
       // Call the RPC function to mark attendance
       const { data, error } = await supabase.rpc('mark_attendance_via_qr', {
         p_student_id: user.id,
         p_qr_token: token,
       });
 
-      if (error) throw error;
+      console.log('Scan Response:', { data, error });
 
-      if (data && !data.success) {
-        throw new Error(data.error || 'Failed to mark attendance');
+      if (error) {
+        console.error('Scan Error:', error);
+        throw error;
       }
 
-      setMessage({
-        type: 'success',
-        text: `Attendance marked successfully for ${data.subject}!`,
-      });
+      if (data && typeof data === 'object') {
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to mark attendance');
+        }
 
-      // Reload recent scans
-      await loadRecentScans();
+        setMessage({
+          type: 'success',
+          text: `Attendance marked successfully for ${data.subject}!`,
+        });
+
+        // Reload recent scans
+        await loadRecentScans();
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
+      console.error('QR Scan Error:', err);
       const errorMsg = err instanceof Error ? err.message : 'Failed to mark attendance';
       setMessage({ type: 'error', text: errorMsg });
     } finally {

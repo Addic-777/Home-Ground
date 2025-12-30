@@ -75,6 +75,13 @@ export default function TeacherQRAttendancePage() {
     setMessage(null);
 
     try {
+      console.log('Calling create_qr_session with:', {
+        p_teacher_id: user.id,
+        p_subject: subject,
+        p_date: new Date().toISOString().split('T')[0],
+        p_expires_hours: 24,
+      });
+
       const { data, error } = await supabase.rpc('create_qr_session', {
         p_teacher_id: user.id,
         p_subject: subject,
@@ -82,19 +89,30 @@ export default function TeacherQRAttendancePage() {
         p_expires_hours: 24,
       });
 
-      if (error) throw error;
+      console.log('RPC Response:', { data, error });
 
-      if (data && !data.success) {
-        throw new Error(data.error || 'Failed to create QR session');
+      if (error) {
+        console.error('RPC Error:', error);
+        throw error;
       }
 
-      setMessage({ 
-        type: 'success', 
-        text: `QR code generated successfully for ${subject}` 
-      });
+      // The RPC function returns a JSON object
+      if (data && typeof data === 'object') {
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to create QR session');
+        }
 
-      await loadQRSessions();
+        setMessage({ 
+          type: 'success', 
+          text: `QR code generated successfully for ${subject}` 
+        });
+
+        await loadQRSessions();
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
+      console.error('Generate QR Error:', err);
       const errorMsg = err instanceof Error ? err.message : 'Failed to generate QR code';
       setMessage({ type: 'error', text: errorMsg });
     } finally {

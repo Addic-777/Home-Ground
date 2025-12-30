@@ -1,4 +1,16 @@
-import SamplePage from './pages/SamplePage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import StudentRegistrationPage from './pages/StudentRegistrationPage';
+import TeacherRegistrationPage from './pages/TeacherRegistrationPage';
+import TeacherLayout from './components/layouts/TeacherLayout';
+import StudentLayout from './components/layouts/StudentLayout';
+import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage';
+import TeacherStudentsPage from './pages/teacher/TeacherStudentsPage';
+import TeacherAttendancePage from './pages/teacher/TeacherAttendancePage';
+import TeacherAnalyticsPage from './pages/teacher/TeacherAnalyticsPage';
+import StudentDashboardPage from './pages/student/StudentDashboardPage';
+import StudentAttendancePage from './pages/student/StudentAttendancePage';
+import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
 import type { ReactNode } from 'react';
 
 interface RouteConfig {
@@ -6,14 +18,79 @@ interface RouteConfig {
   path: string;
   element: ReactNode;
   visible?: boolean;
+  children?: RouteConfig[];
 }
 
 const routes: RouteConfig[] = [
   {
-    name: 'Sample Page',
+    name: 'Home',
     path: '/',
-    element: <SamplePage />
-  }
+    element: <HomePage />,
+  },
+  {
+    name: 'Login',
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    name: 'Student Registration',
+    path: '/register/student',
+    element: <StudentRegistrationPage />,
+  },
+  {
+    name: 'Teacher Registration',
+    path: '/register/teacher',
+    element: <TeacherRegistrationPage />,
+  },
+  {
+    name: 'Teacher Portal',
+    path: '/teacher',
+    element: <TeacherLayout />,
+    children: [
+      {
+        name: 'Teacher Dashboard',
+        path: '/teacher/dashboard',
+        element: <TeacherDashboardPage />,
+      },
+      {
+        name: 'Students',
+        path: '/teacher/students',
+        element: <TeacherStudentsPage />,
+      },
+      {
+        name: 'Mark Attendance',
+        path: '/teacher/attendance',
+        element: <TeacherAttendancePage />,
+      },
+      {
+        name: 'Analytics',
+        path: '/teacher/analytics',
+        element: <TeacherAnalyticsPage />,
+      },
+    ],
+  },
+  {
+    name: 'Student Portal',
+    path: '/student',
+    element: <StudentLayout />,
+    children: [
+      {
+        name: 'Student Dashboard',
+        path: '/student/dashboard',
+        element: <StudentDashboardPage />,
+      },
+      {
+        name: 'My Attendance',
+        path: '/student/attendance',
+        element: <StudentAttendancePage />,
+      },
+      {
+        name: 'Analytics',
+        path: '/student/analytics',
+        element: <StudentAnalyticsPage />,
+      },
+    ],
+  },
 ];
 
 export default routes;

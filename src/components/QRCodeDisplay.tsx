@@ -1,4 +1,4 @@
-import QRCodeSVG from 'react-qr-code';
+import QRCode from 'react-qr-code';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Share2, Copy, CheckCircle } from 'lucide-react';
@@ -86,7 +86,7 @@ export default function QRCodeDisplay({ qrToken, subject, date, onShare }: QRCod
       <CardContent className="space-y-4">
         {/* QR Code Display */}
         <div className="flex justify-center p-6 bg-white rounded-lg border-2 border-border">
-          <QRCodeSVG
+          <QRCode
             id="qr-code-svg"
             value={qrUrl}
             size={200}

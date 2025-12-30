@@ -244,9 +244,24 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
           {/* QR Reader Container - Always rendered */}
           <div
             id="qr-reader"
-            className={`w-full ${isScanning ? 'block' : 'hidden'} rounded-lg overflow-hidden`}
-            style={{ minHeight: isScanning ? '300px' : '0' }}
+            className={`w-full ${isScanning ? 'block' : 'hidden'}`}
+            style={{ 
+              minHeight: isScanning ? '300px' : '0',
+              width: '100%',
+              maxWidth: '100%',
+            }}
           />
+
+          {isScanning && (
+            <div className="text-center p-3 bg-primary/10 rounded-lg">
+              <p className="text-sm font-medium text-primary">
+                📷 Camera Active - Point at QR Code
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Position the QR code within the scanning area
+              </p>
+            </div>
+          )}
 
           {!isScanning && !isInitializing && (
             <div className="text-center p-8 border-2 border-dashed border-border rounded-lg bg-muted/30">

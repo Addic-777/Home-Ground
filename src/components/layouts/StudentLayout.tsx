@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   LayoutDashboard,
   BookOpen,
+  QrCode,
   BarChart3,
   LogOut,
   Menu,
@@ -15,6 +16,7 @@ import { useState } from 'react';
 const navigation = [
   { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
   { name: 'My Attendance', href: '/student/attendance', icon: BookOpen },
+  { name: 'Scan QR Code', href: '/student/scan-attendance', icon: QrCode },
   { name: 'Analytics', href: '/student/analytics', icon: BarChart3 },
 ];
 

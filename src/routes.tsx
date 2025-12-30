@@ -7,9 +7,11 @@ import StudentLayout from './components/layouts/StudentLayout';
 import TeacherDashboardNew from './pages/teacher/TeacherDashboardNew';
 import TeacherStudentsPage from './pages/teacher/TeacherStudentsPage';
 import TeacherAttendancePage from './pages/teacher/TeacherAttendancePage';
+import TeacherQRAttendancePage from './pages/teacher/TeacherQRAttendancePage';
 import TeacherAnalyticsPage from './pages/teacher/TeacherAnalyticsPage';
 import StudentDashboardNew from './pages/student/StudentDashboardNew';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
+import StudentQRScanPage from './pages/student/StudentQRScanPage';
 import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
 import type { ReactNode } from 'react';
 
@@ -63,6 +65,11 @@ const routes: RouteConfig[] = [
         element: <TeacherAttendancePage />,
       },
       {
+        name: 'QR Attendance',
+        path: '/teacher/qr-attendance',
+        element: <TeacherQRAttendancePage />,
+      },
+      {
         name: 'Analytics',
         path: '/teacher/analytics',
         element: <TeacherAnalyticsPage />,
@@ -83,6 +90,11 @@ const routes: RouteConfig[] = [
         name: 'My Attendance',
         path: '/student/attendance',
         element: <StudentAttendancePage />,
+      },
+      {
+        name: 'Scan QR Code',
+        path: '/student/scan-attendance',
+        element: <StudentQRScanPage />,
       },
       {
         name: 'Analytics',

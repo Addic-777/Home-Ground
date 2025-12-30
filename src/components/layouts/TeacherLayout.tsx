@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   ClipboardCheck,
+  QrCode,
   BarChart3,
   LogOut,
   Menu,
@@ -17,6 +18,7 @@ const navigation = [
   { name: 'Dashboard', href: '/teacher/dashboard', icon: LayoutDashboard },
   { name: 'Students', href: '/teacher/students', icon: Users },
   { name: 'Mark Attendance', href: '/teacher/attendance', icon: ClipboardCheck },
+  { name: 'QR Attendance', href: '/teacher/qr-attendance', icon: QrCode },
   { name: 'Analytics', href: '/teacher/analytics', icon: BarChart3 },
 ];
 

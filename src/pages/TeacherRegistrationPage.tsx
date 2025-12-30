@@ -122,6 +122,15 @@ export default function TeacherRegistrationPage() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user');
 
+      // Wait a moment for the session to be established
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Get the session to ensure we're authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Session not established. Please try logging in.');
+      }
+
       // Create profile
       const { error: profileError } = await supabase
         .from('profiles')

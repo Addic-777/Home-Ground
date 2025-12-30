@@ -16,20 +16,36 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [isInitializing, setIsInitializing] = useState(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+    
     return () => {
+      mountedRef.current = false;
       // Cleanup on unmount
-      if (scannerRef.current) {
-        stopScanning();
-      }
+      const cleanup = async () => {
+        if (scannerRef.current) {
+          try {
+            const state = await scannerRef.current.getState();
+            if (state === 2) { // SCANNING state
+              await scannerRef.current.stop();
+            }
+            await scannerRef.current.clear();
+          } catch (e) {
+            console.log('Cleanup completed');
+          }
+          scannerRef.current = null;
+        }
+      };
+      cleanup();
     };
   }, []);
 
   const requestCameraPermission = async () => {
     try {
       console.log('Requesting camera permission...');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       console.log('Camera permission granted');
       stream.getTracks().forEach(track => track.stop());
       setCameraPermission('granted');
@@ -55,13 +71,18 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
         return;
       }
 
-      // Wait a bit for DOM to be ready
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      if (!mountedRef.current) {
+        console.log('Component unmounted, aborting');
+        return;
+      }
 
       // Check if element exists
       const element = document.getElementById('qr-reader');
       if (!element) {
-        throw new Error('QR reader element not found');
+        throw new Error('QR reader element not found. Please refresh the page.');
       }
 
       console.log('Initializing Html5Qrcode...');
@@ -69,19 +90,31 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
       // Clear any existing scanner
       if (scannerRef.current) {
         try {
-          await scannerRef.current.stop();
+          const state = await scannerRef.current.getState();
+          if (state === 2) { // SCANNING state
+            await scannerRef.current.stop();
+          }
           await scannerRef.current.clear();
         } catch (e) {
           console.log('Cleared previous scanner');
         }
+        scannerRef.current = null;
       }
 
       // Create new scanner instance
-      const scanner = new Html5Qrcode('qr-reader');
+      const scanner = new Html5Qrcode('qr-reader', { verbose: false });
       scannerRef.current = scanner;
 
       console.log('Starting camera...');
       
+      // Get available cameras
+      const devices = await Html5Qrcode.getCameras();
+      console.log('Available cameras:', devices.length);
+
+      if (devices.length === 0) {
+        throw new Error('No camera found on this device');
+      }
+
       // Start scanning with camera
       await scanner.start(
         { facingMode: 'environment' }, // Use back camera on mobile
@@ -103,6 +136,12 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
           }
         }
       );
+
+      if (!mountedRef.current) {
+        console.log('Component unmounted after start, stopping');
+        await scanner.stop();
+        return;
+      }
 
       console.log('Camera started successfully');
       setIsScanning(true);
@@ -130,7 +169,8 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
     console.log('Stopping scanner...');
     if (scannerRef.current) {
       try {
-        if (isScanning) {
+        const state = await scannerRef.current.getState();
+        if (state === 2) { // SCANNING state
           await scannerRef.current.stop();
           console.log('Scanner stopped');
         }
@@ -201,10 +241,10 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
             </Button>
           )}
 
-          {/* QR Reader Container - Always rendered but hidden when not scanning */}
+          {/* QR Reader Container - Always rendered */}
           <div
             id="qr-reader"
-            className={`w-full ${isScanning ? 'block' : 'hidden'} rounded-lg overflow-hidden border-2 border-border`}
+            className={`w-full ${isScanning ? 'block' : 'hidden'} rounded-lg overflow-hidden`}
             style={{ minHeight: isScanning ? '300px' : '0' }}
           />
 

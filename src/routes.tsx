@@ -8,10 +8,12 @@ import TeacherDashboardNew from './pages/teacher/TeacherDashboardNew';
 import TeacherStudentsPage from './pages/teacher/TeacherStudentsPage';
 import TeacherAttendancePage from './pages/teacher/TeacherAttendancePage';
 import TeacherQRAttendancePage from './pages/teacher/TeacherQRAttendancePage';
+import TeacherOTPAttendancePage from './pages/teacher/TeacherOTPAttendancePage';
 import TeacherAnalyticsPage from './pages/teacher/TeacherAnalyticsPage';
 import StudentDashboardNew from './pages/student/StudentDashboardNew';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import StudentQRScanPage from './pages/student/StudentQRScanPage';
+import StudentOTPAttendancePage from './pages/student/StudentOTPAttendancePage';
 import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
 import type { ReactNode } from 'react';
 
@@ -70,6 +72,11 @@ const routes: RouteConfig[] = [
         element: <TeacherQRAttendancePage />,
       },
       {
+        name: 'OTP Attendance',
+        path: '/teacher/otp-attendance',
+        element: <TeacherOTPAttendancePage />,
+      },
+      {
         name: 'Analytics',
         path: '/teacher/analytics',
         element: <TeacherAnalyticsPage />,
@@ -95,6 +102,11 @@ const routes: RouteConfig[] = [
         name: 'Scan QR Code',
         path: '/student/scan-attendance',
         element: <StudentQRScanPage />,
+      },
+      {
+        name: 'OTP Attendance',
+        path: '/student/otp-attendance',
+        element: <StudentOTPAttendancePage />,
       },
       {
         name: 'Analytics',

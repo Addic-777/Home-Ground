@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   BookOpen,
   QrCode,
+  Hash,
   BarChart3,
   LogOut,
   Menu,
@@ -17,6 +18,7 @@ const navigation = [
   { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
   { name: 'My Attendance', href: '/student/attendance', icon: BookOpen },
   { name: 'Scan QR Code', href: '/student/scan-attendance', icon: QrCode },
+  { name: 'OTP Attendance', href: '/student/otp-attendance', icon: Hash },
   { name: 'Analytics', href: '/student/analytics', icon: BarChart3 },
 ];
 

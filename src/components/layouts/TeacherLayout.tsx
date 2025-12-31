@@ -7,6 +7,7 @@ import {
   Users,
   ClipboardCheck,
   QrCode,
+  Hash,
   BarChart3,
   LogOut,
   Menu,
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Students', href: '/teacher/students', icon: Users },
   { name: 'Mark Attendance', href: '/teacher/attendance', icon: ClipboardCheck },
   { name: 'QR Attendance', href: '/teacher/qr-attendance', icon: QrCode },
+  { name: 'OTP Attendance', href: '/teacher/otp-attendance', icon: Hash },
   { name: 'Analytics', href: '/teacher/analytics', icon: BarChart3 },
 ];
 
